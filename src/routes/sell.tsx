@@ -74,6 +74,10 @@ function Sell() {
       toast.error("Title and price are required");
       return;
     }
+    if (!geoConfirmed || !country || !location) {
+      toast.error("Please verify your location before listing");
+      return;
+    }
     setBusy(true);
     try {
       const photoUrls: string[] = [];
@@ -90,7 +94,7 @@ function Sell() {
         description: description.trim(),
         condition,
         category,
-        location: location.trim(),
+        location: `${location.trim()}, ${country}`,
         shipping_available: shipping,
         photos: photoUrls,
       });

@@ -53,8 +53,9 @@ function Dashboard() {
   }, [user, loading, navigate]);
 
   const updateStatus = async (id: string, status: "active" | "archived" | "sold" | "deleted") => {
-    const patch: Record<string, unknown> = { status };
-    if (status === "deleted") patch.deleted_at = new Date().toISOString();
+    const patch = status === "deleted"
+      ? { status, deleted_at: new Date().toISOString() }
+      : { status };
     const { error } = await supabase.from("products").update(patch).eq("id", id);
     if (error) toast.error(error.message);
     else {

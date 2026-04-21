@@ -15,10 +15,10 @@ const SECTIONS: { title: string; items: Item[] }[] = [
     title: "ACCOUNT",
     items: [
       { label: "Edit Profile", Icon: UserPen, to: "/onboarding" },
-      { label: "Identity Verification (KYC)", sub: "Submit ID for verified badge", Icon: BadgeCheck },
+      { label: "Identity Verification (KYC)", sub: "Submit ID for verified badge", Icon: BadgeCheck, to: "/kyc" },
       { label: "Notifications", Icon: Bell, to: "/notifications" },
-      { label: "Privacy Settings", Icon: Lock },
-      { label: "Invite Friends", sub: "Share Sellora with your network", Icon: Gift },
+      { label: "Privacy Settings", Icon: Lock, to: "/privacy" },
+      { label: "Invite Friends", sub: "Share Sellora with your network", Icon: Gift, to: "/invite" },
     ],
   },
   {
@@ -33,30 +33,30 @@ const SECTIONS: { title: string; items: Item[] }[] = [
   {
     title: "PREFERENCES",
     items: [
-      { label: "Language", sub: "English", Icon: Languages },
-      { label: "Region & Currency", sub: "Kenya (KES)", Icon: Globe },
-      { label: "Appearance", sub: "Light / Dark / System", Icon: Moon },
-      { label: "Saved Searches", Icon: Star },
+      { label: "Language", sub: "English", Icon: Languages, to: "/preferences" },
+      { label: "Region & Currency", sub: "Kenya (KES)", Icon: Globe, to: "/preferences" },
+      { label: "Appearance", sub: "Light / Dark / System", Icon: Moon, to: "/preferences" },
+      { label: "Saved Searches", Icon: Star, to: "/saved" },
     ],
   },
   {
     title: "SUPPORT",
     items: [
-      { label: "Help Center", Icon: HelpCircle },
-      { label: "Contact Support", Icon: MessageSquare },
-      { label: "Rate Sellora", Icon: Star },
+      { label: "Help Center", Icon: HelpCircle, to: "/help" },
+      { label: "Contact Support", Icon: MessageSquare, to: "/contact" },
+      { label: "Rate Sellora", Icon: Star, to: "/help" },
     ],
   },
   {
     title: "LEGAL & SAFETY",
     items: [
-      { label: "Terms of Service", Icon: ScrollText },
-      { label: "Buyer Guidelines", Icon: FileText },
-      { label: "Seller Guidelines", Icon: FileText },
-      { label: "Community Standards", Icon: TriangleAlert },
-      { label: "Safety Tips", Icon: ShieldAlert },
-      { label: "Privacy Policy", Icon: FileText },
-      { label: "Report a Problem", Icon: TriangleAlert },
+      { label: "Terms of Service", Icon: ScrollText, to: "/legal/terms" },
+      { label: "Buyer Guidelines", Icon: FileText, to: "/legal/buyer" },
+      { label: "Seller Guidelines", Icon: FileText, to: "/legal/seller" },
+      { label: "Community Standards", Icon: TriangleAlert, to: "/legal/community" },
+      { label: "Safety Tips", Icon: ShieldAlert, to: "/legal/safety" },
+      { label: "Privacy Policy", Icon: FileText, to: "/legal/privacy" },
+      { label: "Report a Problem", Icon: TriangleAlert, to: "/report" },
     ],
   },
 ];

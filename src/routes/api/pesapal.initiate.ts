@@ -62,7 +62,7 @@ export const Route = createFileRoute("/api/pesapal/initiate")({
             currency: body.currency || "KES",
             description: body.description.slice(0, 200),
             purpose: body.purpose || "other",
-            metadata: body.metadata || {},
+            metadata: (body.metadata || {}) as never,
             status: "pending",
           });
           if (insertErr) {

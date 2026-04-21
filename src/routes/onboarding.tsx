@@ -1,9 +1,10 @@
-import { createFileRoute, useNavigate, redirect } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { COUNTRIES } from "@/lib/countries";
-import { Camera } from "lucide-react";
+import { describeGeoError, requestGeolocation } from "@/lib/geo";
+import { Camera, Loader2, MapPin } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/onboarding")({

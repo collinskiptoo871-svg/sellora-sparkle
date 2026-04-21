@@ -1,10 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
+import { GuestGate } from "@/components/GuestGate";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import { CATEGORIES } from "@/lib/countries";
-import { ArrowLeft, Image as ImageIcon, Upload, X } from "lucide-react";
+import { CATEGORIES, COUNTRIES } from "@/lib/countries";
+import { describeGeoError, requestGeolocation } from "@/lib/geo";
+import { ArrowLeft, Image as ImageIcon, Loader2, MapPin, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/sell")({

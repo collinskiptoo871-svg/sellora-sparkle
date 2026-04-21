@@ -13,6 +13,7 @@ import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SellRouteImport } from './routes/sell'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as SavedRouteImport } from './routes/saved'
+import { Route as PaymentsRouteImport } from './routes/payments'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as InboxRouteImport } from './routes/inbox'
@@ -22,6 +23,10 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ShopIdRouteImport } from './routes/shop.$id'
 import { Route as ProductIdRouteImport } from './routes/product.$id'
+import { Route as PaymentReturnRouteImport } from './routes/payment.return'
+import { Route as ApiPesapalStatusRouteImport } from './routes/api/pesapal.status'
+import { Route as ApiPesapalInitiateRouteImport } from './routes/api/pesapal.initiate'
+import { Route as ApiPublicPesapalIpnRouteImport } from './routes/api/public/pesapal.ipn'
 
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
@@ -41,6 +46,11 @@ const SearchRoute = SearchRouteImport.update({
 const SavedRoute = SavedRouteImport.update({
   id: '/saved',
   path: '/saved',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PaymentsRoute = PaymentsRouteImport.update({
+  id: '/payments',
+  path: '/payments',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OnboardingRoute = OnboardingRouteImport.update({
@@ -88,6 +98,26 @@ const ProductIdRoute = ProductIdRouteImport.update({
   path: '/product/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PaymentReturnRoute = PaymentReturnRouteImport.update({
+  id: '/payment/return',
+  path: '/payment/return',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPesapalStatusRoute = ApiPesapalStatusRouteImport.update({
+  id: '/api/pesapal/status',
+  path: '/api/pesapal/status',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPesapalInitiateRoute = ApiPesapalInitiateRouteImport.update({
+  id: '/api/pesapal/initiate',
+  path: '/api/pesapal/initiate',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicPesapalIpnRoute = ApiPublicPesapalIpnRouteImport.update({
+  id: '/api/public/pesapal/ipn',
+  path: '/api/public/pesapal/ipn',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -97,12 +127,17 @@ export interface FileRoutesByFullPath {
   '/inbox': typeof InboxRoute
   '/notifications': typeof NotificationsRoute
   '/onboarding': typeof OnboardingRoute
+  '/payments': typeof PaymentsRoute
   '/saved': typeof SavedRoute
   '/search': typeof SearchRoute
   '/sell': typeof SellRoute
   '/settings': typeof SettingsRoute
+  '/payment/return': typeof PaymentReturnRoute
   '/product/$id': typeof ProductIdRoute
   '/shop/$id': typeof ShopIdRoute
+  '/api/pesapal/initiate': typeof ApiPesapalInitiateRoute
+  '/api/pesapal/status': typeof ApiPesapalStatusRoute
+  '/api/public/pesapal/ipn': typeof ApiPublicPesapalIpnRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -112,12 +147,17 @@ export interface FileRoutesByTo {
   '/inbox': typeof InboxRoute
   '/notifications': typeof NotificationsRoute
   '/onboarding': typeof OnboardingRoute
+  '/payments': typeof PaymentsRoute
   '/saved': typeof SavedRoute
   '/search': typeof SearchRoute
   '/sell': typeof SellRoute
   '/settings': typeof SettingsRoute
+  '/payment/return': typeof PaymentReturnRoute
   '/product/$id': typeof ProductIdRoute
   '/shop/$id': typeof ShopIdRoute
+  '/api/pesapal/initiate': typeof ApiPesapalInitiateRoute
+  '/api/pesapal/status': typeof ApiPesapalStatusRoute
+  '/api/public/pesapal/ipn': typeof ApiPublicPesapalIpnRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -128,12 +168,17 @@ export interface FileRoutesById {
   '/inbox': typeof InboxRoute
   '/notifications': typeof NotificationsRoute
   '/onboarding': typeof OnboardingRoute
+  '/payments': typeof PaymentsRoute
   '/saved': typeof SavedRoute
   '/search': typeof SearchRoute
   '/sell': typeof SellRoute
   '/settings': typeof SettingsRoute
+  '/payment/return': typeof PaymentReturnRoute
   '/product/$id': typeof ProductIdRoute
   '/shop/$id': typeof ShopIdRoute
+  '/api/pesapal/initiate': typeof ApiPesapalInitiateRoute
+  '/api/pesapal/status': typeof ApiPesapalStatusRoute
+  '/api/public/pesapal/ipn': typeof ApiPublicPesapalIpnRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -145,12 +190,17 @@ export interface FileRouteTypes {
     | '/inbox'
     | '/notifications'
     | '/onboarding'
+    | '/payments'
     | '/saved'
     | '/search'
     | '/sell'
     | '/settings'
+    | '/payment/return'
     | '/product/$id'
     | '/shop/$id'
+    | '/api/pesapal/initiate'
+    | '/api/pesapal/status'
+    | '/api/public/pesapal/ipn'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -160,12 +210,17 @@ export interface FileRouteTypes {
     | '/inbox'
     | '/notifications'
     | '/onboarding'
+    | '/payments'
     | '/saved'
     | '/search'
     | '/sell'
     | '/settings'
+    | '/payment/return'
     | '/product/$id'
     | '/shop/$id'
+    | '/api/pesapal/initiate'
+    | '/api/pesapal/status'
+    | '/api/public/pesapal/ipn'
   id:
     | '__root__'
     | '/'
@@ -175,12 +230,17 @@ export interface FileRouteTypes {
     | '/inbox'
     | '/notifications'
     | '/onboarding'
+    | '/payments'
     | '/saved'
     | '/search'
     | '/sell'
     | '/settings'
+    | '/payment/return'
     | '/product/$id'
     | '/shop/$id'
+    | '/api/pesapal/initiate'
+    | '/api/pesapal/status'
+    | '/api/public/pesapal/ipn'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -191,12 +251,17 @@ export interface RootRouteChildren {
   InboxRoute: typeof InboxRoute
   NotificationsRoute: typeof NotificationsRoute
   OnboardingRoute: typeof OnboardingRoute
+  PaymentsRoute: typeof PaymentsRoute
   SavedRoute: typeof SavedRoute
   SearchRoute: typeof SearchRoute
   SellRoute: typeof SellRoute
   SettingsRoute: typeof SettingsRoute
+  PaymentReturnRoute: typeof PaymentReturnRoute
   ProductIdRoute: typeof ProductIdRoute
   ShopIdRoute: typeof ShopIdRoute
+  ApiPesapalInitiateRoute: typeof ApiPesapalInitiateRoute
+  ApiPesapalStatusRoute: typeof ApiPesapalStatusRoute
+  ApiPublicPesapalIpnRoute: typeof ApiPublicPesapalIpnRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -227,6 +292,13 @@ declare module '@tanstack/react-router' {
       path: '/saved'
       fullPath: '/saved'
       preLoaderRoute: typeof SavedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/payments': {
+      id: '/payments'
+      path: '/payments'
+      fullPath: '/payments'
+      preLoaderRoute: typeof PaymentsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/onboarding': {
@@ -292,6 +364,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProductIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/payment/return': {
+      id: '/payment/return'
+      path: '/payment/return'
+      fullPath: '/payment/return'
+      preLoaderRoute: typeof PaymentReturnRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/pesapal/status': {
+      id: '/api/pesapal/status'
+      path: '/api/pesapal/status'
+      fullPath: '/api/pesapal/status'
+      preLoaderRoute: typeof ApiPesapalStatusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/pesapal/initiate': {
+      id: '/api/pesapal/initiate'
+      path: '/api/pesapal/initiate'
+      fullPath: '/api/pesapal/initiate'
+      preLoaderRoute: typeof ApiPesapalInitiateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/pesapal/ipn': {
+      id: '/api/public/pesapal/ipn'
+      path: '/api/public/pesapal/ipn'
+      fullPath: '/api/public/pesapal/ipn'
+      preLoaderRoute: typeof ApiPublicPesapalIpnRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -303,12 +403,17 @@ const rootRouteChildren: RootRouteChildren = {
   InboxRoute: InboxRoute,
   NotificationsRoute: NotificationsRoute,
   OnboardingRoute: OnboardingRoute,
+  PaymentsRoute: PaymentsRoute,
   SavedRoute: SavedRoute,
   SearchRoute: SearchRoute,
   SellRoute: SellRoute,
   SettingsRoute: SettingsRoute,
+  PaymentReturnRoute: PaymentReturnRoute,
   ProductIdRoute: ProductIdRoute,
   ShopIdRoute: ShopIdRoute,
+  ApiPesapalInitiateRoute: ApiPesapalInitiateRoute,
+  ApiPesapalStatusRoute: ApiPesapalStatusRoute,
+  ApiPublicPesapalIpnRoute: ApiPublicPesapalIpnRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

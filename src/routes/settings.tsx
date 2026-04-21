@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { AppLayout } from "@/components/AppLayout";
-import { ArrowLeft, BadgeCheck, Bell, ChevronRight, FileText, Gift, Lock, ScrollText, ShieldAlert, ShieldCheck, Store, TriangleAlert, UserPen, Wallet } from "lucide-react";
+import { ArrowLeft, BadgeCheck, Bell, ChevronRight, CreditCard, FileText, Gift, Globe, HelpCircle, Languages, LogOut, Moon, Lock, MessageSquare, ScrollText, ShieldAlert, ShieldCheck, Star, Store, TriangleAlert, UserPen, Wallet } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({ meta: [{ title: "Settings — Sellora" }] }),
@@ -24,8 +25,26 @@ const SECTIONS: { title: string; items: Item[] }[] = [
     title: "SELLING",
     items: [
       { label: "Start Selling", sub: "List your first product!", Icon: Store, to: "/sell" },
-      { label: "Payment Settings", Icon: Wallet },
-      { label: "Verification & Boost", Icon: ShieldCheck },
+      { label: "Payments & Boosts", sub: "Pay via M-Pesa, card, or bank", Icon: CreditCard, to: "/payments" },
+      { label: "Payment Settings", sub: "Payout method & history", Icon: Wallet, to: "/payments" },
+      { label: "Verification & Boost", sub: "Get verified, boost listings", Icon: ShieldCheck, to: "/payments" },
+    ],
+  },
+  {
+    title: "PREFERENCES",
+    items: [
+      { label: "Language", sub: "English", Icon: Languages },
+      { label: "Region & Currency", sub: "Kenya (KES)", Icon: Globe },
+      { label: "Appearance", sub: "Light / Dark / System", Icon: Moon },
+      { label: "Saved Searches", Icon: Star },
+    ],
+  },
+  {
+    title: "SUPPORT",
+    items: [
+      { label: "Help Center", Icon: HelpCircle },
+      { label: "Contact Support", Icon: MessageSquare },
+      { label: "Rate Sellora", Icon: Star },
     ],
   },
   {
@@ -44,6 +63,7 @@ const SECTIONS: { title: string; items: Item[] }[] = [
 
 function Settings() {
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
   return (
     <AppLayout>
       <div className="mb-3 flex items-center gap-2">
@@ -52,6 +72,13 @@ function Settings() {
         </button>
         <h1 className="text-xl font-bold">Settings</h1>
       </div>
+
+      {user && (
+        <div className="mb-5 rounded-lg border border-border bg-card p-4">
+          <p className="text-xs text-muted-foreground">Signed in as</p>
+          <p className="text-sm font-semibold">{user.email}</p>
+        </div>
+      )}
 
       {SECTIONS.map((s) => (
         <section key={s.title} className="mb-5">
@@ -78,6 +105,18 @@ function Settings() {
           </ul>
         </section>
       ))}
+
+      {user && (
+        <button
+          onClick={async () => {
+            await signOut();
+            navigate({ to: "/auth" });
+          }}
+          className="mb-10 flex w-full items-center justify-center gap-2 rounded-lg border border-border bg-card py-3 text-sm font-medium text-destructive"
+        >
+          <LogOut className="h-4 w-4" /> Sign out
+        </button>
+      )}
     </AppLayout>
   );
 }

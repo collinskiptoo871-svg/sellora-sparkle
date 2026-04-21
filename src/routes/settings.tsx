@@ -63,6 +63,7 @@ const SECTIONS: { title: string; items: Item[] }[] = [
 
 function Settings() {
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
   return (
     <AppLayout>
       <div className="mb-3 flex items-center gap-2">
@@ -71,6 +72,13 @@ function Settings() {
         </button>
         <h1 className="text-xl font-bold">Settings</h1>
       </div>
+
+      {user && (
+        <div className="mb-5 rounded-lg border border-border bg-card p-4">
+          <p className="text-xs text-muted-foreground">Signed in as</p>
+          <p className="text-sm font-semibold">{user.email}</p>
+        </div>
+      )}
 
       {SECTIONS.map((s) => (
         <section key={s.title} className="mb-5">
@@ -97,6 +105,18 @@ function Settings() {
           </ul>
         </section>
       ))}
+
+      {user && (
+        <button
+          onClick={async () => {
+            await signOut();
+            navigate({ to: "/auth" });
+          }}
+          className="mb-10 flex w-full items-center justify-center gap-2 rounded-lg border border-border bg-card py-3 text-sm font-medium text-destructive"
+        >
+          <LogOut className="h-4 w-4" /> Sign out
+        </button>
+      )}
     </AppLayout>
   );
 }

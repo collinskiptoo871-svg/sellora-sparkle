@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AppLayout } from "@/components/AppLayout";
 import { ArrowLeft, BadgeCheck, Bell, ChevronRight, CreditCard, FileText, Gift, Globe, HelpCircle, Languages, LogOut, Moon, Lock, MessageSquare, ScrollText, ShieldAlert, ShieldCheck, Star, Store, TriangleAlert, UserPen, Wallet } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";

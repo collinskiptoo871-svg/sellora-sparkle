@@ -68,6 +68,10 @@ function Onboarding() {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+    if (!geoConfirmed) {
+      toast.error("Please tap 'Use my current location' to verify your country & city");
+      return;
+    }
     setBusy(true);
     try {
       let avatar_url: string | null = preview;

@@ -32,13 +32,28 @@ function Sell() {
   const [description, setDescription] = useState("");
   const [condition, setCondition] = useState<typeof CONDITIONS[number]["v"]>("new");
   const [category, setCategory] = useState(CATEGORIES[0]);
+  const [country, setCountry] = useState("");
   const [location, setLocation] = useState("");
   const [shipping, setShipping] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [geoBusy, setGeoBusy] = useState(false);
+  const [geoConfirmed, setGeoConfirmed] = useState(false);
 
-  useEffect(() => {
-    if (!loading && !user) navigate({ to: "/auth" });
-  }, [user, loading, navigate]);
+  const detectLocation = async () => {
+    setGeoBusy(true);
+    try {
+      const g = await requestGeolocation();
+      const match = COUNTRIES.find((c) => c.toLowerCase() === g.country.toLowerCase()) || g.country;
+      setCountry(match);
+      setLocation(g.city || "");
+      setGeoConfirmed(true);
+      toast.success(`Location set: ${g.city ? g.city + ", " : ""}${match}`);
+    } catch (e) {
+      toast.error(describeGeoError(e));
+    } finally {
+      setGeoBusy(false);
+    }
+  };
 
   const addPhotos = (files: FileList) => {
     const remaining = 3 - photos.length;

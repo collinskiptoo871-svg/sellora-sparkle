@@ -108,6 +108,9 @@ function Sell() {
     }
   };
 
+  if (loading) return <AppLayout><p className="text-sm text-muted-foreground">Loading…</p></AppLayout>;
+  if (!user) return <AppLayout><GuestGate message="Sign in to list a product for sale." /></AppLayout>;
+
   return (
     <AppLayout>
       <div className="mb-3 flex items-center gap-2">

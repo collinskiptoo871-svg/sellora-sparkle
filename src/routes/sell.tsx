@@ -1,12 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { GuestGate } from "@/components/GuestGate";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import { CATEGORIES, COUNTRIES } from "@/lib/countries";
+import { CATEGORIES } from "@/lib/countries";
 import { describeGeoError, requestGeolocation } from "@/lib/geo";
-import { ArrowLeft, Image as ImageIcon, Loader2, MapPin, Upload, X } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Image as ImageIcon, Loader2, MapPin, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/sell")({
@@ -43,11 +43,10 @@ function Sell() {
     setGeoBusy(true);
     try {
       const g = await requestGeolocation();
-      const match = COUNTRIES.find((c) => c.toLowerCase() === g.country.toLowerCase()) || g.country;
-      setCountry(match);
+      setCountry(g.country);
       setLocation(g.city || "");
       setGeoConfirmed(true);
-      toast.success(`Location set: ${g.city ? g.city + ", " : ""}${match}`);
+      toast.success(`Listing location verified: ${g.city ? g.city + ", " : ""}${g.country}`);
     } catch (e) {
       toast.error(describeGeoError(e));
     } finally {
@@ -61,7 +60,6 @@ function Sell() {
     setPhotos([...photos, ...next]);
     setPreviews([...previews, ...next.map((f) => URL.createObjectURL(f))]);
   };
-
   const removePhoto = (i: number) => {
     setPhotos(photos.filter((_, idx) => idx !== i));
     setPreviews(previews.filter((_, idx) => idx !== i));
@@ -70,15 +68,25 @@ function Sell() {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
-    if (!title.trim() || !price) {
-      toast.error("Title and price are required");
-      return;
-    }
-    if (!geoConfirmed || !country || !location) {
-      toast.error("Please verify your location before listing");
-      return;
-    }
+    if (!title.trim() || !price) return toast.error("Title and price are required");
+    if (photos.length === 0) return toast.error("At least one photo is required");
+
+    // Always re-verify GPS before posting — never trust stale state
     setBusy(true);
+    let verifiedCountry = country;
+    let verifiedCity = location;
+    try {
+      const g = await requestGeolocation();
+      verifiedCountry = g.country;
+      verifiedCity = location.trim() || g.city;
+      setCountry(verifiedCountry);
+      setLocation(verifiedCity);
+      setGeoConfirmed(true);
+    } catch (err) {
+      setBusy(false);
+      return toast.error("Location must be verified to list. " + describeGeoError(err));
+    }
+
     try {
       const photoUrls: string[] = [];
       for (const f of photos) {
@@ -94,7 +102,7 @@ function Sell() {
         description: description.trim(),
         condition,
         category,
-        location: `${location.trim()}, ${country}`,
+        location: `${verifiedCity || "—"}, ${verifiedCountry}`,
         shipping_available: shipping,
         photos: photoUrls,
       });
@@ -128,75 +136,36 @@ function Sell() {
             {previews.map((src, i) => (
               <div key={i} className="relative h-24 w-24 overflow-hidden rounded-lg border border-border">
                 <img src={src} alt={`Photo ${i + 1}`} className="h-full w-full object-cover" />
-                <button
-                  type="button"
-                  onClick={() => removePhoto(i)}
-                  aria-label="Remove photo"
-                  className="absolute right-1 top-1 rounded-full bg-card/90 p-1"
-                >
+                <button type="button" onClick={() => removePhoto(i)} aria-label="Remove photo" className="absolute right-1 top-1 rounded-full bg-card/90 p-1">
                   <X className="h-3 w-3" />
                 </button>
               </div>
             ))}
             {photos.length < 3 && (
-              <button
-                type="button"
-                onClick={() => fileRef.current?.click()}
-                className="flex h-24 w-24 flex-col items-center justify-center rounded-lg border-2 border-dashed border-border text-muted-foreground"
-              >
+              <button type="button" onClick={() => fileRef.current?.click()} className="flex h-24 w-24 flex-col items-center justify-center rounded-lg border-2 border-dashed border-border text-muted-foreground">
                 <ImageIcon className="h-5 w-5" />
                 <span className="mt-1 text-xs">Add</span>
               </button>
             )}
           </div>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/*"
-            multiple
-            className="hidden"
-            onChange={(e) => e.target.files && addPhotos(e.target.files)}
-          />
+          <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => e.target.files && addPhotos(e.target.files)} />
         </div>
 
         <Field label="Title">
           <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Samsung Galaxy S24" maxLength={120} className="input" />
         </Field>
-
         <Field label="Price (KES)">
-          <input
-            type="number"
-            min={0}
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-            placeholder="0"
-            className="input"
-          />
+          <input type="number" min={0} value={price} onChange={(e) => setPrice(e.target.value)} placeholder="0" className="input" />
         </Field>
-
         <Field label="Description">
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Describe your product..."
-            maxLength={1000}
-            rows={4}
-            className="input min-h-[100px] py-2"
-          />
+          <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe your product..." maxLength={1000} rows={4} className="input min-h-[100px] py-2" />
         </Field>
 
         <div>
           <p className="mb-2 text-sm font-medium">Condition</p>
           <div className="flex flex-wrap gap-2">
             {CONDITIONS.map((c) => (
-              <button
-                key={c.v}
-                type="button"
-                onClick={() => setCondition(c.v)}
-                className={`rounded-full px-4 py-1.5 text-sm ${
-                  condition === c.v ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"
-                }`}
-              >
+              <button key={c.v} type="button" onClick={() => setCondition(c.v)} className={`rounded-full px-4 py-1.5 text-sm ${condition === c.v ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"}`}>
                 {c.label}
               </button>
             ))}
@@ -210,56 +179,33 @@ function Sell() {
         </Field>
 
         <div className={`rounded-lg border p-3 ${geoConfirmed ? "border-primary/40 bg-primary/5" : "border-dashed border-border bg-card"}`}>
-          <p className="mb-1 text-sm font-medium">Verify product location <span className="text-primary">*</span></p>
-          <p className="mb-2 text-xs text-muted-foreground">
-            We auto-fill country &amp; city from your device location to keep listings accurate.
+          <p className="mb-1 flex items-center gap-1 text-sm font-medium">
+            Verify listing location <span className="text-primary">*</span>
+            {geoConfirmed && <CheckCircle2 className="h-4 w-4 text-success" />}
           </p>
-          <button
-            type="button"
-            onClick={detectLocation}
-            disabled={geoBusy}
-            className="flex w-full items-center justify-center gap-2 rounded-md bg-[image:var(--gradient-primary)] py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-60"
-          >
+          <p className="mb-2 text-xs text-muted-foreground">
+            We re-check your GPS at every post to prevent fake locations. Country is locked; you can refine the city.
+          </p>
+          <button type="button" onClick={detectLocation} disabled={geoBusy} className="flex w-full items-center justify-center gap-2 rounded-md bg-[image:var(--gradient-primary)] py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-60">
             {geoBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <MapPin className="h-4 w-4" />}
-            {geoConfirmed ? "Re-detect location" : "Use my current location"}
+            {geoConfirmed ? "Re-verify my location" : "Use my current location"}
           </button>
+          {country && (
+            <p className="mt-2 text-xs"><strong>Country:</strong> {country} <span className="text-muted-foreground">(locked)</span></p>
+          )}
         </div>
 
-        <Field label="Country">
-          <select value={country} onChange={(e) => setCountry(e.target.value)} className="input" disabled={!geoConfirmed} required>
-            <option value="">Select country</option>
-            {COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
-            {country && !COUNTRIES.includes(country) && <option value={country}>{country}</option>}
-          </select>
-        </Field>
-
-        <Field label="City / area">
-          <input
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            placeholder="e.g. Nairobi"
-            className="input"
-            disabled={!geoConfirmed}
-            required
-          />
+        <Field label="City / area (refine)">
+          <input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g. Nairobi" className="input" disabled={!geoConfirmed} />
         </Field>
 
         <label className="flex items-center justify-between rounded-lg border border-border bg-card p-3">
           <span className="text-sm font-medium">Shipping available?</span>
-          <input
-            type="checkbox"
-            checked={shipping}
-            onChange={(e) => setShipping(e.target.checked)}
-            className="h-6 w-11 cursor-pointer appearance-none rounded-full bg-muted transition checked:bg-primary"
-            style={{ position: "relative" }}
-          />
+          <input type="checkbox" checked={shipping} onChange={(e) => setShipping(e.target.checked)} className="h-5 w-5" />
         </label>
 
-        <button
-          disabled={busy}
-          className="flex h-12 w-full items-center justify-center gap-2 rounded-md bg-[image:var(--gradient-primary)] font-semibold text-primary-foreground disabled:opacity-60"
-        >
-          <Upload className="h-4 w-4" /> {busy ? "Listing..." : "List Product"}
+        <button disabled={busy} className="flex h-12 w-full items-center justify-center gap-2 rounded-md bg-[image:var(--gradient-primary)] font-semibold text-primary-foreground disabled:opacity-60">
+          <Upload className="h-4 w-4" /> {busy ? "Verifying & Listing..." : "List Product"}
         </button>
       </form>
 

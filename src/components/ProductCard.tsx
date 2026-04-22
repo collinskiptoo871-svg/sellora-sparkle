@@ -3,6 +3,7 @@ import { Eye, Heart, MapPin } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 
 export interface ProductCardData {
@@ -48,6 +49,8 @@ export function ProductCard({ p }: { p: ProductCardData }) {
     }
   };
 
+  const initial = (seller.display_name || "S").charAt(0).toUpperCase();
+
   return (
     <Link
       to="/product/$id"
@@ -84,9 +87,15 @@ export function ProductCard({ p }: { p: ProductCardData }) {
             <MapPin className="h-3 w-3" /> {p.location}
           </p>
         )}
-        <div className="flex items-center justify-between pt-1">
-          <span className="line-clamp-1 text-xs text-muted-foreground">{seller.display_name ?? "Seller"}</span>
-          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+        <div className="flex items-center justify-between gap-2 pt-1">
+          <div className="flex min-w-0 items-center gap-1.5">
+            <Avatar className="h-5 w-5 shrink-0">
+              <AvatarImage src={seller.avatar_url ?? undefined} alt="" className="h-5 w-5 rounded-full object-cover" />
+              <AvatarFallback className="text-[10px]">{initial}</AvatarFallback>
+            </Avatar>
+            <span className="line-clamp-1 text-xs text-muted-foreground">{seller.display_name ?? "Seller"}</span>
+          </div>
+          <span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
             <Eye className="h-3 w-3" /> {p.views}
           </span>
         </div>

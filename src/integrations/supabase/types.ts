@@ -106,6 +106,51 @@ export type Database = {
           },
         ]
       }
+      kyc_submissions: {
+        Row: {
+          created_at: string
+          document_type: string
+          id: string
+          id_back_path: string | null
+          id_front_path: string
+          notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          selfie_path: string | null
+          status: Database["public"]["Enums"]["kyc_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          document_type?: string
+          id?: string
+          id_back_path?: string | null
+          id_front_path: string
+          notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          selfie_path?: string | null
+          status?: Database["public"]["Enums"]["kyc_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          document_type?: string
+          id?: string
+          id_back_path?: string | null
+          id_front_path?: string
+          notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          selfie_path?: string | null
+          status?: Database["public"]["Enums"]["kyc_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           body: string
@@ -542,6 +587,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
+      kyc_status: "pending" | "approved" | "rejected"
       notification_category: "messages" | "product" | "account" | "promotions"
       payment_purpose:
         | "boost_product"
@@ -690,6 +736,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
+      kyc_status: ["pending", "approved", "rejected"],
       notification_category: ["messages", "product", "account", "promotions"],
       payment_purpose: [
         "boost_product",

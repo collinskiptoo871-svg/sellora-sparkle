@@ -4,6 +4,7 @@ import { AppLayout } from "@/components/AppLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { ProductCard, type ProductCardData } from "@/components/ProductCard";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { BadgeCheck, MapPin, Star, UserX } from "lucide-react";
 import { toast } from "sonner";
 
@@ -24,19 +25,37 @@ interface Profile {
   avg_response_minutes: number;
 }
 
+interface Review {
+  id: string;
+  rating: number;
+  comment: string | null;
+  created_at: string;
+  reviewer_id: string;
+  reviewer_name?: string | null;
+  reviewer_avatar?: string | null;
+}
+
 function Shop() {
   const { id } = Route.useParams();
   const { user } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [products, setProducts] = useState<ProductCardData[]>([]);
-  const [reviews, setReviews] = useState<{ rating: number }[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
 
   useEffect(() => {
     supabase.from("profiles").select("*").eq("user_id", id).maybeSingle().then(({ data }) => setProfile(data as Profile | null));
     supabase.from("products").select("id,title,price,currency,location,photos,views,seller_id").eq("seller_id", id).eq("status", "active")
       .then(({ data }) => setProducts((data as ProductCardData[]) ?? []));
-    supabase.from("reviews").select("rating").eq("seller_id", id)
-      .then(({ data }) => setReviews(data ?? []));
+    supabase.from("reviews").select("id,rating,comment,created_at,reviewer_id").eq("seller_id", id).order("created_at", { ascending: false })
+      .then(async ({ data }) => {
+        const list = (data as Review[]) ?? [];
+        if (list.length) {
+          const ids = Array.from(new Set(list.map((r) => r.reviewer_id)));
+          const { data: profs } = await supabase.from("profiles").select("user_id,display_name,avatar_url").in("user_id", ids);
+          const m = new Map((profs ?? []).map((p) => [p.user_id, p]));
+          setReviews(list.map((r) => ({ ...r, reviewer_name: m.get(r.reviewer_id)?.display_name ?? null, reviewer_avatar: m.get(r.reviewer_id)?.avatar_url ?? null })));
+        } else setReviews([]);
+      });
   }, [id]);
 
   const blockSeller = async () => {
@@ -97,6 +116,35 @@ function Shop() {
           ))}
         </div>
       </section>
+
+      {reviews.length > 0 && (
+        <section className="mt-4">
+          <h2 className="mb-2 text-lg font-bold">Reviews</h2>
+          <ul className="space-y-2">
+            {reviews.slice(0, 10).map((r) => {
+              const initial = (r.reviewer_name || "U").charAt(0).toUpperCase();
+              return (
+                <li key={r.id} className="rounded-lg border border-border bg-card p-3">
+                  <div className="mb-1 flex items-center gap-2">
+                    <Avatar className="h-7 w-7">
+                      <AvatarImage src={r.reviewer_avatar ?? undefined} className="h-7 w-7 rounded-full object-cover" />
+                      <AvatarFallback className="text-[10px]">{initial}</AvatarFallback>
+                    </Avatar>
+                    <span className="text-sm font-medium">{r.reviewer_name ?? "Anonymous"}</span>
+                    <div className="ml-auto flex gap-0.5">
+                      {[1, 2, 3, 4, 5].map((n) => (
+                        <Star key={n} className={`h-3.5 w-3.5 ${n <= r.rating ? "fill-warning text-warning" : "text-muted-foreground/40"}`} />
+                      ))}
+                    </div>
+                  </div>
+                  {r.comment && <p className="text-sm text-muted-foreground">{r.comment}</p>}
+                  <p className="mt-1 text-[10px] text-muted-foreground">{new Date(r.created_at).toLocaleDateString()}</p>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
 
       {user && user.id !== id && (
         <button onClick={blockSeller} className="mt-3 flex w-full items-center justify-center gap-2 rounded-md border border-destructive/30 py-2 text-sm font-medium text-destructive">

@@ -97,12 +97,12 @@ function Dashboard() {
       </div>
 
       <div className="mt-3 grid grid-cols-2 gap-2">
-        <button className="flex items-center justify-center gap-2 rounded-md bg-[image:var(--gradient-primary)] py-3 font-semibold text-primary-foreground">
+        <Link to="/payments" className="flex items-center justify-center gap-2 rounded-md bg-[image:var(--gradient-primary)] py-3 font-semibold text-primary-foreground">
           <Rocket className="h-4 w-4" /> Boost Sales
-        </button>
-        <button className="flex items-center justify-center gap-2 rounded-md bg-primary-soft py-3 font-semibold text-accent-foreground">
+        </Link>
+        <Link to="/kyc" className="flex items-center justify-center gap-2 rounded-md bg-primary-soft py-3 font-semibold text-accent-foreground">
           <BadgeCheck className="h-4 w-4" /> Get Verified
-        </button>
+        </Link>
       </div>
 
       <div className="mt-3 rounded-lg bg-primary-soft p-3 text-sm">
@@ -113,7 +113,7 @@ function Dashboard() {
       <h2 className="mt-5 text-lg font-bold">Dashboard</h2>
       <div className="mt-2 grid grid-cols-2 gap-2">
         <Tile icon={Box} label="My Products" sub={`${counts.products} items`} to="/dashboard" />
-        <Tile icon={Star} label="Reviews" sub={`${counts.reviews} items`} to="/dashboard" />
+        <Tile icon={Star} label="Reviews" sub={`${counts.reviews} items`} to={user ? `/shop/${user.id}` : "/"} />
         <Tile icon={Inbox} label="Inbox" to="/inbox" />
         <Tile icon={Archive} label="Archived" sub={`${products.filter((p) => p.status === "archived").length} items`} to="/dashboard" />
         <Tile icon={Eye} label="Sold Out" sub={`${products.filter((p) => p.status === "sold").length} items`} to="/dashboard" />
@@ -121,7 +121,7 @@ function Dashboard() {
         <Tile icon={Store} label="View Shop" to={user ? `/shop/${user.id}` : "/"} />
         <Tile icon={Plus} label="Add Product" to="/sell" />
         <Tile icon={Settings} label="Settings" to="/settings" />
-        <Tile icon={Mail} label="Contact Admin" to="/settings" />
+        <Tile icon={Mail} label="Contact Admin" to="/contact" />
       </div>
 
       <h2 className="mt-5 flex items-center justify-between text-lg font-bold">

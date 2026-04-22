@@ -4,7 +4,7 @@ import { AppLayout } from "@/components/AppLayout";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { initiatePesapalPayment } from "@/lib/pesapal-client";
-import { ArrowLeft, BadgeCheck, Crown, Loader2, Rocket, ShieldCheck, Wallet } from "lucide-react";
+import { ArrowLeft, BadgeCheck, Check, Crown, Loader2, Rocket, ShieldCheck, Wallet, Zap } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/payments")({
@@ -22,15 +22,139 @@ interface Order {
   created_at: string;
 }
 
-const BOOST_PRICE = 500; // KES, 7-day boost
-const VERIFY_PRICE = 1000; // KES, identity verified badge
-const PRO_PRICE = 1500; // KES / month
+type Purpose = "boost_product" | "verification" | "subscription";
+
+interface Tier {
+  id: string;
+  name: string;
+  price: number;
+  purpose: Purpose;
+  description: string;
+  benefits: string[];
+  highlight?: boolean;
+  suffix?: string;
+}
+
+const BOOST_TIERS: Tier[] = [
+  {
+    id: "boost_bronze",
+    name: "Bronze Boost",
+    price: 300,
+    purpose: "boost_product",
+    description: "3-day visibility lift",
+    benefits: [
+      "Top of category for 3 days",
+      "Highlighted card border",
+      "Up to 2x more views",
+      "Boosted in search results",
+      "Eligible for daily picks",
+      "Email when boost expires",
+      "Performance summary report",
+    ],
+  },
+  {
+    id: "boost_silver",
+    name: "Silver Boost",
+    price: 700,
+    purpose: "boost_product",
+    description: "7-day premium placement",
+    highlight: true,
+    benefits: [
+      "Top of category for 7 days",
+      "Featured in homepage feed",
+      "Up to 4x more views",
+      "Push notifications to nearby buyers",
+      "Pinned to seller's shop top",
+      "Story-style highlight",
+      "Boost badge on product card",
+      "Priority in search ranking",
+      "Detailed analytics dashboard",
+      "Auto-renew option",
+    ],
+  },
+  {
+    id: "boost_gold",
+    name: "Gold Boost",
+    price: 1500,
+    purpose: "boost_product",
+    description: "14-day max exposure",
+    benefits: [
+      "Top of category for 14 days",
+      "Pinned to homepage hero",
+      "Up to 10x more views",
+      "Sent in weekly buyer digest",
+      "Premium gold ribbon badge",
+      "Cross-category recommendations",
+      "Featured in push & in-app banners",
+      "Smart re-targeting to past viewers",
+      "Buyer interest analytics",
+      "Dedicated boost manager (24h SLA)",
+    ],
+  },
+];
+
+const VERIFY_TIERS: Tier[] = [
+  {
+    id: "verify_basic",
+    name: "Basic Verified",
+    price: 500,
+    purpose: "verification",
+    description: "Identity confirmed",
+    benefits: [
+      "Blue verified badge on profile",
+      "Higher search trust score",
+      "Eligible to list higher-value items",
+      "Verified mark in chats",
+      "Faster dispute resolution",
+      "Access to seller community",
+    ],
+  },
+  {
+    id: "verify_pro",
+    name: "Pro Verified",
+    price: 1500,
+    purpose: "verification",
+    description: "ID + selfie + phone",
+    highlight: true,
+    benefits: [
+      "All Basic Verified benefits",
+      "Gold verified badge",
+      "Priority placement in search",
+      "Higher daily listing cap",
+      "Buyer protection eligibility",
+      "Direct customer support line",
+      "Featured in 'Trusted Sellers' section",
+      "Lower commission rates",
+      "Custom shop URL",
+    ],
+  },
+  {
+    id: "verify_business",
+    name: "Business Verified",
+    price: 5000,
+    purpose: "verification",
+    description: "Registered business",
+    benefits: [
+      "All Pro Verified benefits",
+      "Diamond business badge",
+      "Verified business logo display",
+      "Bulk listing tools",
+      "Multi-staff shop access",
+      "API access for inventory sync",
+      "Dedicated account manager",
+      "Premium analytics & exports",
+      "Featured business spotlight",
+      "Co-marketing opportunities",
+    ],
+  },
+];
 
 function Payments() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [orders, setOrders] = useState<Order[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
+  const [tab, setTab] = useState<"boost" | "verify">("boost");
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/auth" });
@@ -46,15 +170,16 @@ function Payments() {
       .then(({ data }) => setOrders((data as Order[]) || []));
   }, [user]);
 
-  const pay = async (purpose: "boost_product" | "verification" | "subscription", amount: number, description: string) => {
+  const pay = async (tier: Tier) => {
     if (!user) return;
-    setBusy(purpose);
+    setBusy(tier.id);
     try {
       const { redirect_url } = await initiatePesapalPayment({
-        amount,
+        amount: tier.price,
         currency: "KES",
-        description,
-        purpose,
+        description: `Sellora — ${tier.name}`,
+        purpose: tier.purpose,
+        metadata: { tier_id: tier.id, tier_name: tier.name },
         email: user.email || undefined,
       });
       window.location.href = redirect_url;
@@ -64,6 +189,8 @@ function Payments() {
     }
   };
 
+  const tiers = tab === "boost" ? BOOST_TIERS : VERIFY_TIERS;
+
   return (
     <AppLayout>
       <div className="mb-3 flex items-center gap-2">
@@ -72,34 +199,27 @@ function Payments() {
         </button>
         <h1 className="text-xl font-bold">Payments</h1>
       </div>
-      <p className="mb-4 text-sm text-muted-foreground">Pay securely via M-Pesa, card, or bank with Pesapal.</p>
+      <p className="mb-4 text-sm text-muted-foreground">Boost products or get verified. M-Pesa, card, or bank via Pesapal.</p>
+
+      <div className="mb-4 grid grid-cols-2 gap-1 rounded-lg bg-secondary p-1">
+        <button
+          onClick={() => setTab("boost")}
+          className={`flex items-center justify-center gap-1 rounded-md py-2 text-sm font-medium ${tab === "boost" ? "bg-card shadow-sm" : "text-muted-foreground"}`}
+        >
+          <Rocket className="h-4 w-4" /> Boost
+        </button>
+        <button
+          onClick={() => setTab("verify")}
+          className={`flex items-center justify-center gap-1 rounded-md py-2 text-sm font-medium ${tab === "verify" ? "bg-card shadow-sm" : "text-muted-foreground"}`}
+        >
+          <BadgeCheck className="h-4 w-4" /> Verify
+        </button>
+      </div>
 
       <div className="space-y-3">
-        <PayCard
-          Icon={Rocket}
-          title="Boost a product"
-          sub="7 days top placement in search & feed"
-          price={BOOST_PRICE}
-          loading={busy === "boost_product"}
-          onPay={() => pay("boost_product", BOOST_PRICE, "Sellora — 7-day product boost")}
-        />
-        <PayCard
-          Icon={BadgeCheck}
-          title="Verified seller badge"
-          sub="One-time identity verification fee"
-          price={VERIFY_PRICE}
-          loading={busy === "verification"}
-          onPay={() => pay("verification", VERIFY_PRICE, "Sellora — Verified seller badge")}
-        />
-        <PayCard
-          Icon={Crown}
-          title="Sellora Pro"
-          sub="Unlimited listings, priority support"
-          price={PRO_PRICE}
-          suffix="/mo"
-          loading={busy === "subscription"}
-          onPay={() => pay("subscription", PRO_PRICE, "Sellora Pro — monthly")}
-        />
+        {tiers.map((t) => (
+          <TierCard key={t.id} tier={t} loading={busy === t.id} onPay={() => pay(t)} />
+        ))}
       </div>
 
       <h2 className="mb-2 mt-6 text-xs font-semibold tracking-wide text-muted-foreground">RECENT PAYMENTS</h2>
@@ -110,8 +230,8 @@ function Payments() {
           {orders.map((o, i) => (
             <li key={o.id} className={`flex items-center gap-3 px-4 py-3 ${i > 0 ? "border-t border-border" : ""}`}>
               <Wallet className="h-5 w-5 text-primary" />
-              <div className="flex-1">
-                <p className="text-sm font-medium">{o.description}</p>
+              <div className="flex-1 min-w-0">
+                <p className="line-clamp-1 text-sm font-medium">{o.description}</p>
                 <p className="text-xs text-muted-foreground">
                   {new Date(o.created_at).toLocaleString()} · {o.payment_method || "—"}
                 </p>
@@ -127,49 +247,47 @@ function Payments() {
 
       <p className="mt-6 flex items-center gap-2 text-xs text-muted-foreground">
         <ShieldCheck className="h-3.5 w-3.5" />
-        Payments verified server-side via Pesapal IPN. <Link to="/settings" className="underline">Settings</Link>
+        All payments verified server-side via Pesapal IPN. <Link to="/settings" className="underline">Settings</Link>
       </p>
     </AppLayout>
   );
 }
 
-function PayCard({
-  Icon,
-  title,
-  sub,
-  price,
-  suffix,
-  loading,
-  onPay,
-}: {
-  Icon: React.ComponentType<{ className?: string }>;
-  title: string;
-  sub: string;
-  price: number;
-  suffix?: string;
-  loading: boolean;
-  onPay: () => void;
-}) {
+function TierCard({ tier, loading, onPay }: { tier: Tier; loading: boolean; onPay: () => void }) {
   return (
-    <div className="flex items-center gap-3 rounded-lg border border-border bg-card p-4">
-      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-        <Icon className="h-5 w-5 text-primary" />
+    <div className={`rounded-lg border bg-card p-4 ${tier.highlight ? "border-primary shadow-[var(--shadow-elegant)]" : "border-border"}`}>
+      <div className="mb-2 flex items-start justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2">
+            <p className="font-bold">{tier.name}</p>
+            {tier.highlight && (
+              <span className="flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold text-primary-foreground">
+                <Zap className="h-3 w-3" /> POPULAR
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground">{tier.description}</p>
+        </div>
+        <div className="text-right">
+          <p className="text-lg font-bold">KES {tier.price.toLocaleString()}<span className="text-xs font-normal text-muted-foreground">{tier.suffix || ""}</span></p>
+        </div>
       </div>
-      <div className="flex-1">
-        <p className="font-semibold">{title}</p>
-        <p className="text-xs text-muted-foreground">{sub}</p>
-      </div>
-      <div className="text-right">
-        <p className="text-sm font-bold">KES {price.toLocaleString()}<span className="text-xs font-normal text-muted-foreground">{suffix || ""}</span></p>
-        <button
-          disabled={loading}
-          onClick={onPay}
-          className="mt-1 inline-flex h-9 items-center gap-1 rounded-md bg-[image:var(--gradient-primary)] px-3 text-xs font-semibold text-primary-foreground disabled:opacity-60"
-        >
-          {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
-          {loading ? "Starting…" : "Pay"}
-        </button>
-      </div>
+      <ul className="mb-3 space-y-1">
+        {tier.benefits.map((b) => (
+          <li key={b} className="flex items-start gap-2 text-xs">
+            <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+            <span>{b}</span>
+          </li>
+        ))}
+      </ul>
+      <button
+        disabled={loading}
+        onClick={onPay}
+        className="flex h-10 w-full items-center justify-center gap-1 rounded-md bg-[image:var(--gradient-primary)] text-sm font-semibold text-primary-foreground disabled:opacity-60"
+      >
+        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : tier.purpose === "boost_product" ? <Rocket className="h-4 w-4" /> : <Crown className="h-4 w-4" />}
+        {loading ? "Starting…" : `Pay KES ${tier.price.toLocaleString()}`}
+      </button>
     </div>
   );
 }

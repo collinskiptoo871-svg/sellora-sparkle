@@ -77,8 +77,10 @@ function Onboarding() {
       }
       const { error } = await supabase
         .from("profiles")
-        .update({ display_name: name.trim(), country, location: location.trim(), bio, avatar_url })
-        .eq("user_id", user.id);
+        .upsert(
+          { user_id: user.id, display_name: name.trim(), country, location: location.trim(), bio, avatar_url },
+          { onConflict: "user_id" }
+        );
       if (error) throw error;
       toast.success("Profile saved!");
       navigate({ to: "/dashboard" });

@@ -109,7 +109,7 @@ function ProductPage() {
   const messageSeller = () => {
     if (!user) return navigate({ to: "/auth" });
     if (user.id === p.seller_id) return toast.info("This is your own listing");
-    toast.info("Messaging coming soon — chat is being built.");
+    navigate({ to: "/inbox/$userId", params: { userId: p.seller_id }, search: { product: p.id } });
   };
 
   const share = () => {

@@ -1,15 +1,25 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
-import { ArrowLeft, Check } from "lucide-react";
+import { ArrowLeft, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/use-auth";
+import { supabase } from "@/integrations/supabase/client";
+import { applyTheme, type ThemeChoice } from "@/lib/theme";
+import { setLanguage, t, type LangCode } from "@/lib/i18n";
 
 export const Route = createFileRoute("/preferences")({
   head: () => ({ meta: [{ title: "Preferences — Sellora" }] }),
   component: PreferencesPage,
 });
 
-const LANGUAGES = ["English", "Swahili", "French", "Arabic", "Spanish"];
+const LANGUAGES: { code: LangCode; label: string }[] = [
+  { code: "en", label: "English" },
+  { code: "sw", label: "Swahili" },
+  { code: "fr", label: "French" },
+  { code: "ar", label: "Arabic" },
+  { code: "es", label: "Spanish" },
+];
 const REGIONS = [
   { label: "Kenya (KES)", code: "KES" },
   { label: "Uganda (UGX)", code: "UGX" },
@@ -17,37 +27,62 @@ const REGIONS = [
   { label: "Nigeria (NGN)", code: "NGN" },
   { label: "United States (USD)", code: "USD" },
 ];
-const THEMES: ("light" | "dark" | "system")[] = ["light", "dark", "system"];
+const THEMES: ThemeChoice[] = ["light", "dark", "system"];
 
 function PreferencesPage() {
+  const { user } = useAuth();
   const navigate = useNavigate();
-  const [lang, setLang] = useState("English");
+  const [lang, setLang] = useState<LangCode>("en");
   const [region, setRegion] = useState("KES");
-  const [theme, setTheme] = useState<"light" | "dark" | "system">("system");
+  const [theme, setTheme] = useState<ThemeChoice>("system");
+  const [busy, setBusy] = useState(false);
+  const [loaded, setLoaded] = useState(false);
 
+  // Load — first localStorage (instant), then DB (authoritative)
   useEffect(() => {
-    const saved = localStorage.getItem("prefs");
-    if (saved) {
-      const p = JSON.parse(saved);
-      setLang(p.lang || "English");
-      setRegion(p.region || "KES");
-      setTheme(p.theme || "system");
+    const local = localStorage.getItem("prefs");
+    if (local) {
+      try {
+        const p = JSON.parse(local);
+        if (p.lang) setLang(p.lang);
+        if (p.region) setRegion(p.region);
+        if (p.theme) setTheme(p.theme);
+      } catch { /* ignore */ }
     }
-  }, []);
+    if (!user) { setLoaded(true); return; }
+    supabase.from("user_preferences").select("*").eq("user_id", user.id).maybeSingle().then(({ data }) => {
+      if (data) {
+        const langMap: Record<string, LangCode> = { English: "en", Swahili: "sw", French: "fr", Arabic: "ar", Spanish: "es" };
+        const code = (langMap[data.language] || (data.language as LangCode)) as LangCode;
+        setLang(code);
+        setRegion(data.region);
+        setTheme(data.theme as ThemeChoice);
+      }
+      setLoaded(true);
+    });
+  }, [user]);
 
-  useEffect(() => {
-    const root = document.documentElement;
-    if (theme === "dark") root.classList.add("dark");
-    else if (theme === "light") root.classList.remove("dark");
-    else {
-      const m = window.matchMedia("(prefers-color-scheme: dark)").matches;
-      root.classList.toggle("dark", m);
-    }
-  }, [theme]);
+  // Live apply on change
+  useEffect(() => { if (loaded) applyTheme(theme); }, [theme, loaded]);
+  useEffect(() => { if (loaded) setLanguage(lang); }, [lang, loaded]);
 
-  const save = () => {
+  const save = async () => {
+    setBusy(true);
     localStorage.setItem("prefs", JSON.stringify({ lang, region, theme }));
-    toast.success("Preferences saved");
+    if (user) {
+      const langLabel = LANGUAGES.find((l) => l.code === lang)?.label || "English";
+      const { error } = await supabase.from("user_preferences").upsert(
+        { user_id: user.id, language: langLabel, region, theme },
+        { onConflict: "user_id" }
+      );
+      if (error) {
+        toast.error(error.message);
+        setBusy(false);
+        return;
+      }
+    }
+    toast.success(t("prefs_saved"));
+    setBusy(false);
   };
 
   return (
@@ -56,32 +91,33 @@ function PreferencesPage() {
         <button onClick={() => navigate({ to: "/settings" })} aria-label="Back" className="rounded-full p-2 hover:bg-secondary">
           <ArrowLeft className="h-5 w-5" />
         </button>
-        <h1 className="text-xl font-bold">Preferences</h1>
+        <h1 className="text-xl font-bold">{t("preferences")}</h1>
       </div>
 
-      <Section title="Language">
+      <Section title={t("language")}>
         {LANGUAGES.map((l) => (
-          <Row key={l} label={l} active={lang === l} onClick={() => setLang(l)} />
+          <Row key={l.code} label={l.label} active={lang === l.code} onClick={() => setLang(l.code)} />
         ))}
       </Section>
 
-      <Section title="Region & Currency">
+      <Section title={t("region_currency")}>
         {REGIONS.map((r) => (
           <Row key={r.code} label={r.label} active={region === r.code} onClick={() => setRegion(r.code)} />
         ))}
       </Section>
 
-      <Section title="Appearance">
-        {THEMES.map((t) => (
-          <Row key={t} label={t[0].toUpperCase() + t.slice(1)} active={theme === t} onClick={() => setTheme(t)} />
+      <Section title={t("appearance")}>
+        {THEMES.map((tCh) => (
+          <Row key={tCh} label={tCh[0].toUpperCase() + tCh.slice(1)} active={theme === tCh} onClick={() => setTheme(tCh)} />
         ))}
       </Section>
 
       <button
         onClick={save}
-        className="mt-2 mb-10 w-full rounded-lg bg-[image:var(--gradient-primary)] py-3 text-sm font-semibold text-primary-foreground"
+        disabled={busy}
+        className="mt-2 mb-10 flex w-full items-center justify-center gap-2 rounded-lg bg-[image:var(--gradient-primary)] py-3 text-sm font-semibold text-primary-foreground disabled:opacity-60"
       >
-        Save preferences
+        {busy && <Loader2 className="h-4 w-4 animate-spin" />} {t("save_preferences")}
       </button>
     </AppLayout>
   );

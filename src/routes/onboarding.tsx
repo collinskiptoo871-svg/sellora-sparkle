@@ -2,13 +2,12 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import { COUNTRIES } from "@/lib/countries";
 import { describeGeoError, requestGeolocation } from "@/lib/geo";
-import { Camera, Loader2, MapPin } from "lucide-react";
+import { ArrowLeft, Camera, CheckCircle2, Loader2, MapPin } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/onboarding")({
-  head: () => ({ meta: [{ title: "Set up your profile — Sellora" }] }),
+  head: () => ({ meta: [{ title: "Edit profile — Sellora" }] }),
   component: Onboarding,
 });
 
@@ -19,8 +18,8 @@ function Onboarding() {
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [name, setName] = useState("");
-  const [country, setCountry] = useState("");
-  const [location, setLocation] = useState("");
+  const [country, setCountry] = useState(""); // GPS-locked
+  const [location, setLocation] = useState(""); // editable
   const [bio, setBio] = useState("");
   const [busy, setBusy] = useState(false);
   const [geoBusy, setGeoBusy] = useState(false);
@@ -30,12 +29,10 @@ function Onboarding() {
     setGeoBusy(true);
     try {
       const g = await requestGeolocation();
-      // Match detected country to our list (best-effort; fall back to raw)
-      const match = COUNTRIES.find((c) => c.toLowerCase() === g.country.toLowerCase()) || g.country;
-      setCountry(match);
+      setCountry(g.country);
       setLocation(g.city || "");
       setGeoConfirmed(true);
-      toast.success(`Location set: ${g.city ? g.city + ", " : ""}${match}`);
+      toast.success(`Location verified: ${g.city ? g.city + ", " : ""}${g.country}`);
     } catch (e) {
       toast.error(describeGeoError(e));
     } finally {
@@ -53,8 +50,7 @@ function Onboarding() {
           setLocation(data.location ?? "");
           setBio(data.bio ?? "");
           setPreview(data.avatar_url ?? null);
-          // If profile already complete, skip onboarding
-          if (data.display_name && data.country) navigate({ to: "/" });
+          if (data.country) setGeoConfirmed(true);
         }
       });
     }
@@ -68,10 +64,8 @@ function Onboarding() {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
-    if (!geoConfirmed) {
-      toast.error("Please tap 'Use my current location' to verify your country & city");
-      return;
-    }
+    if (!geoConfirmed || !country) return toast.error("Please tap 'Use my current location' to verify your country");
+    if (!name.trim()) return toast.error("Your name is required");
     setBusy(true);
     try {
       let avatar_url: string | null = preview;
@@ -83,11 +77,11 @@ function Onboarding() {
       }
       const { error } = await supabase
         .from("profiles")
-        .update({ display_name: name, country, location, bio, avatar_url })
+        .update({ display_name: name.trim(), country, location: location.trim(), bio, avatar_url })
         .eq("user_id", user.id);
       if (error) throw error;
       toast.success("Profile saved!");
-      navigate({ to: "/" });
+      navigate({ to: "/dashboard" });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not save profile");
     } finally {
@@ -97,18 +91,23 @@ function Onboarding() {
 
   return (
     <div className="mx-auto min-h-screen max-w-screen-md bg-background px-4 py-6">
-      <h1 className="mb-1 text-2xl font-bold text-foreground">Set up your profile</h1>
+      <div className="mb-3 flex items-center gap-2">
+        <button onClick={() => navigate({ to: "/dashboard" })} aria-label="Back" className="rounded-full p-2 hover:bg-secondary">
+          <ArrowLeft className="h-5 w-5" />
+        </button>
+        <h1 className="text-2xl font-bold text-foreground">Edit your profile</h1>
+      </div>
       <p className="mb-6 text-sm text-muted-foreground">Tell buyers and sellers a bit about you.</p>
       <form onSubmit={onSubmit} className="space-y-4">
         <div className="flex items-center gap-4">
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
-            className="relative h-24 w-24 overflow-hidden rounded-full border-2 border-dashed border-border bg-secondary"
+            className="relative h-24 w-24 shrink-0 overflow-hidden rounded-full border-2 border-dashed border-border bg-secondary"
             aria-label="Upload photo"
           >
             {preview ? (
-              <img src={preview} alt="Preview" className="h-full w-full object-cover" />
+              <img src={preview} alt="Preview" className="h-full w-full rounded-full object-cover" />
             ) : (
               <Camera className="m-auto mt-7 h-8 w-8 text-muted-foreground" />
             )}
@@ -117,29 +116,20 @@ function Onboarding() {
             <p className="text-sm font-medium">Profile photo</p>
             <p className="text-xs text-muted-foreground">JPG or PNG, up to 5 MB</p>
           </div>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => e.target.files?.[0] && onPhoto(e.target.files[0])}
-          />
+          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && onPhoto(e.target.files[0])} />
         </div>
 
         <Field label="Full name" required>
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-            maxLength={80}
-            className="input"
-          />
+          <input value={name} onChange={(e) => setName(e.target.value)} required maxLength={80} className="input" />
         </Field>
 
         <div className={`rounded-lg border p-3 ${geoConfirmed ? "border-primary/40 bg-primary/5" : "border-dashed border-border bg-card"}`}>
-          <p className="mb-1 text-sm font-medium">Verify your location <span className="text-primary">*</span></p>
+          <p className="mb-1 flex items-center gap-1 text-sm font-medium">
+            Verify your location <span className="text-primary">*</span>
+            {geoConfirmed && <CheckCircle2 className="h-4 w-4 text-success" />}
+          </p>
           <p className="mb-2 text-xs text-muted-foreground">
-            We use your device location to auto-fill country &amp; city. Required to keep the marketplace safe.
+            Your country is locked from device GPS to keep the marketplace honest. You can refine the city below.
           </p>
           <button
             type="button"
@@ -152,42 +142,20 @@ function Onboarding() {
           </button>
         </div>
 
-        <Field label="Country" required>
-          <select value={country} onChange={(e) => setCountry(e.target.value)} required className="input" disabled={!geoConfirmed}>
-            <option value="">Select country</option>
-            {COUNTRIES.map((c) => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-            {country && !COUNTRIES.includes(country) && <option value={country}>{country}</option>}
-          </select>
+        <Field label="Country (locked to GPS)" required>
+          <input value={country} readOnly placeholder="Tap 'Use my current location' above" className="input cursor-not-allowed bg-muted text-muted-foreground" />
         </Field>
 
-        <Field label="Location (city / area)" required>
-          <input
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            maxLength={100}
-            required
-            disabled={!geoConfirmed}
-            className="input"
-          />
+        <Field label="City / area (you can refine)" required>
+          <input value={location} onChange={(e) => setLocation(e.target.value)} maxLength={100} required disabled={!geoConfirmed} placeholder="e.g. Rongai" className="input" />
         </Field>
 
         <Field label="Bio">
-          <textarea
-            value={bio}
-            onChange={(e) => setBio(e.target.value)}
-            maxLength={300}
-            rows={3}
-            className="input min-h-[88px] py-2"
-          />
+          <textarea value={bio} onChange={(e) => setBio(e.target.value)} maxLength={300} rows={3} className="input min-h-[88px] py-2" />
         </Field>
 
-        <button
-          disabled={busy}
-          className="h-12 w-full rounded-md bg-[image:var(--gradient-primary)] font-semibold text-primary-foreground disabled:opacity-60"
-        >
-          {busy ? "Saving..." : "Submit"}
+        <button disabled={busy || !geoConfirmed} className="h-12 w-full rounded-md bg-[image:var(--gradient-primary)] font-semibold text-primary-foreground disabled:opacity-60">
+          {busy ? "Saving..." : "Save profile"}
         </button>
       </form>
 

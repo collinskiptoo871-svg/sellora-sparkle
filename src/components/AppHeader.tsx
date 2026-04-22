@@ -54,25 +54,26 @@ export function AppHeader() {
           </Link>
           {user ? (
             <DropdownMenu>
-              <DropdownMenuTrigger className="rounded-full" aria-label="Account menu">
-                <Avatar className="h-9 w-9 border border-border">
-                  <AvatarImage src={avatar ?? undefined} alt={name} />
-                  <AvatarFallback>{(name || user.email || "U").charAt(0).toUpperCase()}</AvatarFallback>
+              <DropdownMenuTrigger
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-secondary"
+                aria-label="Account menu"
+              >
+                <Avatar className="block h-10 w-10 shrink-0 rounded-full">
+                  <AvatarImage src={avatar ?? undefined} alt={name} className="h-10 w-10 rounded-full object-cover" />
+                  <AvatarFallback className="h-10 w-10 rounded-full text-sm">
+                    {(name || user.email || "U").charAt(0).toUpperCase()}
+                  </AvatarFallback>
                 </Avatar>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel>{name || user.email}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => navigate({ to: "/dashboard" })}>Dashboard</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate({ to: "/onboarding" })}>Edit Profile</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate({ to: "/saved" })}>Saved</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate({ to: "/settings" })}>Settings</DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={async () => {
-                    await signOut();
-                    navigate({ to: "/auth" });
-                  }}
-                >
+                <DropdownMenuItem onClick={async () => { await signOut(); navigate({ to: "/auth" }); }}>
                   Sign out
                 </DropdownMenuItem>
               </DropdownMenuContent>

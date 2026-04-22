@@ -14,8 +14,8 @@ export async function requestGeolocation(): Promise<GeoLocation> {
   const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
     navigator.geolocation.getCurrentPosition(resolve, reject, {
       enableHighAccuracy: true,
-      timeout: 12000,
-      maximumAge: 60_000,
+      timeout: 15000,
+      maximumAge: 30_000,
     });
   });
 
@@ -39,7 +39,7 @@ export async function requestGeolocation(): Promise<GeoLocation> {
 }
 
 export function describeGeoError(e: unknown): string {
-  if (e instanceof GeolocationPositionError) {
+  if (typeof window !== "undefined" && e instanceof GeolocationPositionError) {
     if (e.code === 1) return "Location permission was denied. Please allow it in your browser to continue.";
     if (e.code === 2) return "Location unavailable. Check your connection or GPS and retry.";
     if (e.code === 3) return "Location request timed out. Please try again.";

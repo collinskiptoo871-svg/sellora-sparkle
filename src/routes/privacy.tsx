@@ -2,7 +2,8 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { useAuth } from "@/hooks/use-auth";
-import { ArrowLeft, Lock } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { ArrowLeft, Loader2, Lock } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/privacy")({
@@ -10,17 +11,58 @@ export const Route = createFileRoute("/privacy")({
   component: PrivacyPage,
 });
 
+interface Prefs {
+  show_online: boolean;
+  show_location: boolean;
+  allow_messages: boolean;
+  read_receipts: boolean;
+}
+const DEFAULTS: Prefs = { show_online: true, show_location: true, allow_messages: true, read_receipts: true };
+
 function PrivacyPage() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const [showOnline, setShowOnline] = useState(true);
-  const [showLocation, setShowLocation] = useState(true);
-  const [allowMessages, setAllowMessages] = useState(true);
-  const [readReceipts, setReadReceipts] = useState(true);
+  const [prefs, setPrefs] = useState<Prefs>(DEFAULTS);
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/auth" });
   }, [loading, user, navigate]);
+
+  // Load — local first, then DB
+  useEffect(() => {
+    const local = localStorage.getItem("privacy");
+    if (local) { try { setPrefs({ ...DEFAULTS, ...JSON.parse(local) }); } catch { /* ignore */ } }
+    if (!user) return;
+    supabase.from("user_preferences").select("show_online,show_location,allow_messages,read_receipts").eq("user_id", user.id).maybeSingle().then(({ data }) => {
+      if (data) setPrefs({
+        show_online: data.show_online,
+        show_location: data.show_location,
+        allow_messages: data.allow_messages,
+        read_receipts: data.read_receipts,
+      });
+    });
+  }, [user]);
+
+  const save = async () => {
+    setBusy(true);
+    localStorage.setItem("privacy", JSON.stringify(prefs));
+    if (user) {
+      const { error } = await supabase.from("user_preferences").upsert(
+        { user_id: user.id, ...prefs },
+        { onConflict: "user_id" }
+      );
+      if (error) {
+        toast.error(error.message);
+        setBusy(false);
+        return;
+      }
+    }
+    toast.success("Privacy preferences saved");
+    setBusy(false);
+  };
+
+  const set = <K extends keyof Prefs>(k: K) => (v: boolean) => setPrefs((p) => ({ ...p, [k]: v }));
 
   return (
     <AppLayout>
@@ -32,17 +74,18 @@ function PrivacyPage() {
       </div>
 
       <ul className="overflow-hidden rounded-lg border border-border bg-card">
-        <Toggle label="Show online status" checked={showOnline} onChange={setShowOnline} />
-        <Toggle label="Show my location on profile" checked={showLocation} onChange={setShowLocation} />
-        <Toggle label="Allow direct messages" checked={allowMessages} onChange={setAllowMessages} />
-        <Toggle label="Send read receipts" checked={readReceipts} onChange={setReadReceipts} />
+        <Toggle label="Show online status" checked={prefs.show_online} onChange={set("show_online")} />
+        <Toggle label="Show my location on profile" checked={prefs.show_location} onChange={set("show_location")} />
+        <Toggle label="Allow direct messages" checked={prefs.allow_messages} onChange={set("allow_messages")} />
+        <Toggle label="Send read receipts" checked={prefs.read_receipts} onChange={set("read_receipts")} />
       </ul>
 
       <button
-        onClick={() => toast.success("Privacy preferences saved")}
-        className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-[image:var(--gradient-primary)] py-3 text-sm font-semibold text-primary-foreground"
+        onClick={save}
+        disabled={busy}
+        className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-[image:var(--gradient-primary)] py-3 text-sm font-semibold text-primary-foreground disabled:opacity-60"
       >
-        <Lock className="h-4 w-4" /> Save preferences
+        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />} Save preferences
       </button>
     </AppLayout>
   );

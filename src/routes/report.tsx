@@ -19,6 +19,9 @@ const REASONS: { value: "misleading" | "counterfeit" | "scam" | "inappropriate" 
   { value: "other", label: "Other" },
 ];
 
+const MIN_DETAILS = 20;
+const MAX_DETAILS = 1000;
+
 function ReportPage() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
@@ -30,14 +33,21 @@ function ReportPage() {
     if (!loading && !user) navigate({ to: "/auth" });
   }, [loading, user, navigate]);
 
+  const trimmed = details.trim();
+  const valid = trimmed.length >= MIN_DETAILS && trimmed.length <= MAX_DETAILS;
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+    if (!valid) {
+      toast.error(`Please describe the issue in at least ${MIN_DETAILS} characters.`);
+      return;
+    }
     setBusy(true);
     const { error } = await supabase.from("reports").insert({
       reporter_id: user.id,
       reason,
-      details: details || null,
+      details: trimmed,
     });
     setBusy(false);
     if (error) {
@@ -70,17 +80,25 @@ function ReportPage() {
           </div>
         </div>
 
-        <textarea
-          value={details}
-          onChange={(e) => setDetails(e.target.value)}
-          placeholder="Describe the issue (optional)"
-          rows={5}
-          className="w-full rounded-md border border-border bg-card p-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-        />
+        <div>
+          <textarea
+            value={details}
+            onChange={(e) => setDetails(e.target.value.slice(0, MAX_DETAILS))}
+            placeholder={`Describe the issue in detail (minimum ${MIN_DETAILS} characters). Include who, what, when, where and any links or order numbers.`}
+            rows={6}
+            required
+            minLength={MIN_DETAILS}
+            maxLength={MAX_DETAILS}
+            className="w-full rounded-md border border-border bg-card p-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+          />
+          <p className={`mt-1 text-xs ${valid ? "text-success" : "text-muted-foreground"}`}>
+            {trimmed.length}/{MAX_DETAILS} characters {valid ? "✓" : `(min ${MIN_DETAILS})`}
+          </p>
+        </div>
 
         <button
           type="submit"
-          disabled={busy}
+          disabled={busy || !valid}
           className="flex w-full items-center justify-center gap-2 rounded-lg bg-[image:var(--gradient-primary)] py-3 text-sm font-semibold text-primary-foreground disabled:opacity-60"
         >
           <TriangleAlert className="h-4 w-4" /> {busy ? "Submitting…" : "Submit report"}

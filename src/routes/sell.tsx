@@ -114,11 +114,11 @@ function Sell() {
       }
       const { error } = await supabase.from("products").insert({
         seller_id: user.id,
-        title: title.trim(),
-        price: Number(price),
-        description: description.trim(),
+        title: parsed.data.title,
+        price: parsed.data.price,
+        description: parsed.data.description,
         condition,
-        category,
+        category: parsed.data.category,
         location: `${verifiedCity || "—"}, ${verifiedCountry}`,
         shipping_available: shipping,
         photos: photoUrls,

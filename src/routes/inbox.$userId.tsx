@@ -43,7 +43,11 @@ function Chat() {
       .then(({ data }) => setOther(data ?? null));
     if (product) {
       supabase.from("products").select("id,title,price,currency,photos").eq("id", product).maybeSingle()
-        .then(({ data }) => setProductInfo(data ?? null));
+        .then(({ data }) => {
+          setProductInfo(data ?? null);
+          // Pre-fill shortcut message when arriving from a product page
+          setBody((prev) => prev || (data ? `Hi! Is "${data.title}" still available?` : prev));
+        });
     }
   }, [userId, product]);
 

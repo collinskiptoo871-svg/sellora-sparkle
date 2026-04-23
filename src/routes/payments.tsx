@@ -329,7 +329,7 @@ function Payments() {
   );
 }
 
-function TierCard({ tier, loading, onPay }: { tier: Tier; loading: boolean; onPay: () => void }) {
+function TierCard({ tier, loading, onPay, disabled }: { tier: Tier; loading: boolean; onPay: () => void; disabled?: boolean }) {
   return (
     <div className={`rounded-lg border bg-card p-4 ${tier.highlight ? "border-primary shadow-[var(--shadow-elegant)]" : "border-border"}`}>
       <div className="mb-2 flex items-start justify-between gap-3">

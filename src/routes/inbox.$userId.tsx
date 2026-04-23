@@ -107,7 +107,15 @@ function Chat() {
 
   const send = async () => {
     const text = body.trim();
-    if (!text || sending) return;
+    if (!text) {
+      toast.error("Please type a message before sending.");
+      return;
+    }
+    if (text.length > 2000) {
+      toast.error("Message is too long (max 2000 characters).");
+      return;
+    }
+    if (sending) return;
     if (user.id === userId) {
       toast.info("You can't message yourself");
       return;

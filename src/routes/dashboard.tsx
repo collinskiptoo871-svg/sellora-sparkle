@@ -53,15 +53,29 @@ function Dashboard() {
   }, [user, loading, navigate]);
 
   const updateStatus = async (id: string, status: "active" | "archived" | "sold" | "deleted") => {
+    if (!user) return;
     const patch = status === "deleted"
       ? { status, deleted_at: new Date().toISOString() }
       : { status };
-    const { error } = await supabase.from("products").update(patch).eq("id", id);
-    if (error) toast.error(error.message);
-    else {
-      toast.success(`Product ${status}`);
-      setProducts((prev) => prev.filter((p) => p.id !== id || status !== "deleted").map((p) => (p.id === id ? { ...p, status } : p)));
+    const { error } = await supabase
+      .from("products")
+      .update(patch)
+      .eq("id", id)
+      .eq("seller_id", user.id);
+    if (error) {
+      toast.error(error.message);
+      return;
     }
+    toast.success(`Product ${status}`);
+    setProducts((prev) =>
+      status === "deleted"
+        ? prev.filter((p) => p.id !== id)
+        : prev.map((p) => (p.id === id ? { ...p, status } : p))
+    );
+    setCounts((c) => ({
+      ...c,
+      active: status === "active" ? c.active + 1 : c.active,
+    }));
   };
 
   return (

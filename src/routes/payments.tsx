@@ -247,9 +247,54 @@ function Payments() {
         </button>
       </div>
 
+      {!profileComplete && (
+        <div className="mb-4 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm">
+          <p className="font-semibold">Complete your profile first</p>
+          <p className="mb-2 text-xs text-muted-foreground">
+            Sellora requires your name and a GPS-verified country before any payment can be made.
+          </p>
+          <button
+            onClick={() => navigate({ to: "/onboarding" })}
+            className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground"
+          >
+            Complete profile
+          </button>
+        </div>
+      )}
+
+      {tab === "boost" && profileComplete && (
+        <div className="mb-4 rounded-lg border border-border bg-card p-3">
+          <p className="mb-1 text-sm font-semibold">Choose product to boost <span className="text-primary">*</span></p>
+          {products.length === 0 ? (
+            <div className="text-xs text-muted-foreground">
+              You have no active products yet.{" "}
+              <Link to="/sell" className="text-primary underline">List one first</Link>.
+            </div>
+          ) : (
+            <select
+              value={selectedProductId}
+              onChange={(e) => setSelectedProductId(e.target.value)}
+              className="h-11 w-full rounded-md border border-border bg-background px-3 text-sm"
+              required
+            >
+              <option value="">— Select a product —</option>
+              {products.map((p) => (
+                <option key={p.id} value={p.id}>{p.title}</option>
+              ))}
+            </select>
+          )}
+        </div>
+      )}
+
       <div className="space-y-3">
         {tiers.map((t) => (
-          <TierCard key={t.id} tier={t} loading={busy === t.id} onPay={() => pay(t)} />
+          <TierCard
+            key={t.id}
+            tier={t}
+            loading={busy === t.id}
+            disabled={!profileComplete || (t.purpose === "boost_product" && (products.length === 0 || !selectedProductId))}
+            onPay={() => pay(t)}
+          />
         ))}
       </div>
 

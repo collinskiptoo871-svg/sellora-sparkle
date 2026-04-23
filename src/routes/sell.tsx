@@ -76,7 +76,16 @@ function Sell() {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
-    if (!title.trim() || !price) return toast.error("Title and price are required");
+    const parsed = SellSchema.safeParse({
+      title,
+      price,
+      description,
+      category,
+    });
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0]?.message ?? "Please check your inputs");
+      return;
+    }
     if (photos.length === 0) return toast.error("At least one photo is required");
 
     // Always re-verify GPS before posting — never trust stale state

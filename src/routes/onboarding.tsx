@@ -1,10 +1,18 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { describeGeoError, requestGeolocation } from "@/lib/geo";
 import { ArrowLeft, Camera, CheckCircle2, Loader2, MapPin } from "lucide-react";
 import { toast } from "sonner";
+
+const ProfileSchema = z.object({
+  display_name: z.string().trim().min(2, "Name must be at least 2 characters").max(80),
+  country: z.string().trim().min(1, "Country is required"),
+  location: z.string().trim().max(100).optional().default(""),
+  bio: z.string().trim().max(300).optional().default(""),
+});
 
 export const Route = createFileRoute("/onboarding")({
   head: () => ({ meta: [{ title: "Edit profile — Sellora" }] }),

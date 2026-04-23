@@ -154,8 +154,8 @@ function Dashboard() {
               <p className="flex items-center gap-1 text-xs text-muted-foreground"><Eye className="h-3 w-3" /> {p.views} • <span className="capitalize">{p.status}</span></p>
             </div>
             <div className="flex flex-col gap-1">
-              <Link to="/product/$id" params={{ id: p.id }} className="rounded-md bg-primary-soft px-3 py-1 text-xs font-medium text-accent-foreground">Edit</Link>
-              <button onClick={() => updateStatus(p.id, "sold")} className="rounded-md bg-warning/30 px-3 py-1 text-xs font-medium">Sold Out</button>
+              <Link to="/product/$id/edit" params={{ id: p.id }} className="rounded-md bg-primary-soft px-3 py-1 text-center text-xs font-medium text-accent-foreground">Edit</Link>
+              <button type="button" onClick={() => updateStatus(p.id, "sold")} className="rounded-md bg-warning/30 px-3 py-1 text-xs font-medium">Sold Out</button>
               <button onClick={() => updateStatus(p.id, "archived")} className="rounded-md bg-secondary px-3 py-1 text-xs font-medium">Archive</button>
               <button onClick={() => updateStatus(p.id, "deleted")} className="rounded-md bg-destructive/20 px-3 py-1 text-xs font-medium text-destructive">Delete</button>
             </div>

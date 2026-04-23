@@ -32,8 +32,18 @@ function Dashboard() {
     if (!loading && !user) navigate({ to: "/auth" });
     if (!user) return;
     (async () => {
-      const { data: prof } = await supabase.from("profiles").select("display_name,avatar_url,location,verified").eq("user_id", user.id).maybeSingle();
-      setProfile(prof ?? null);
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("display_name,avatar_url,location,verified,country")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      // Force completion of profile (name + GPS country) before using the app
+      if (!prof?.display_name || !prof?.country) {
+        toast.info("Please complete your profile to continue.");
+        navigate({ to: "/onboarding" });
+        return;
+      }
+      setProfile(prof);
       const { data: prods } = await supabase
         .from("products")
         .select("id,title,price,currency,photos,views,status,created_at")

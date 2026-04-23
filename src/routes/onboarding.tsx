@@ -73,7 +73,15 @@ function Onboarding() {
     e.preventDefault();
     if (!user) return;
     if (!geoConfirmed || !country) return toast.error("Please tap 'Use my current location' to verify your country");
-    if (!name.trim()) return toast.error("Your name is required");
+    const parsed = ProfileSchema.safeParse({
+      display_name: name,
+      country,
+      location,
+      bio,
+    });
+    if (!parsed.success) {
+      return toast.error(parsed.error.issues[0]?.message ?? "Please check your inputs");
+    }
     setBusy(true);
     try {
       let avatar_url: string | null = preview;
@@ -86,7 +94,14 @@ function Onboarding() {
       const { error } = await supabase
         .from("profiles")
         .upsert(
-          { user_id: user.id, display_name: name.trim(), country, location: location.trim(), bio, avatar_url },
+          {
+            user_id: user.id,
+            display_name: parsed.data.display_name,
+            country: parsed.data.country,
+            location: parsed.data.location,
+            bio: parsed.data.bio,
+            avatar_url,
+          },
           { onConflict: "user_id" }
         );
       if (error) throw error;

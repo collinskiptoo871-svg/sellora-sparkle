@@ -88,7 +88,8 @@ function Chat() {
         .maybeSingle()
         .then(({ data }) => {
           setProductInfo(data ?? null);
-          setBody((prev) => prev || (data ? `Hi! Is "${data.title}" still available?` : prev));
+          // Note: we no longer auto-fill the composer. The pinned product card
+          // gives context; the user types their own first message.
         });
     }
   }, [userId, product]);
@@ -476,28 +477,34 @@ function Chat() {
         </DropdownMenu>
       </div>
 
-      {/* Pinned product context */}
+      {/* Pinned product context — visible only, never auto-sent. Tap "Ask about this" to prefill the composer. */}
       {productInfo && (
-        <Link
-          to="/product/$id"
-          params={{ id: productInfo.id }}
-          className="-mx-4 sticky top-[57px] z-10 flex items-center gap-3 border-b border-border bg-background/95 px-4 py-2 backdrop-blur"
-        >
-          <div className="h-11 w-11 shrink-0 overflow-hidden rounded-md bg-muted">
-            {productInfo.photos[0] && (
-              <img src={productInfo.photos[0]} alt="" className="h-full w-full object-cover" />
-            )}
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="line-clamp-1 text-sm font-medium">{productInfo.title}</p>
-            <p className="text-xs font-bold text-primary">
-              {productInfo.currency} {productInfo.price.toLocaleString()}
-            </p>
-          </div>
-          <span className="rounded-full bg-primary/10 px-2 py-1 text-[10px] font-semibold text-primary">
-            About this item
-          </span>
-        </Link>
+        <div className="-mx-4 sticky top-[57px] z-10 flex items-center gap-3 border-b border-border bg-background/95 px-4 py-2 backdrop-blur">
+          <Link
+            to="/product/$id"
+            params={{ id: productInfo.id }}
+            className="flex min-w-0 flex-1 items-center gap-3"
+          >
+            <div className="h-11 w-11 shrink-0 overflow-hidden rounded-md bg-muted">
+              {productInfo.photos[0] && (
+                <img src={productInfo.photos[0]} alt="" className="h-full w-full object-cover" />
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="line-clamp-1 text-sm font-medium">{productInfo.title}</p>
+              <p className="text-xs font-bold text-primary">
+                {productInfo.currency} {productInfo.price.toLocaleString()}
+              </p>
+            </div>
+          </Link>
+          <button
+            type="button"
+            onClick={() => setBody(`Hi! Is "${productInfo.title}" still available?`)}
+            className="shrink-0 rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-semibold text-primary hover:bg-primary/20"
+          >
+            Ask about this
+          </button>
+        </div>
       )}
 
       {/* Messages — taller scroll area, closer to input */}
@@ -521,32 +528,49 @@ function Chat() {
                     key={m.id}
                     className={`max-w-[78%] rounded-2xl px-3 py-2 text-sm shadow-sm ${
                       mine
-                        ? "ml-auto rounded-br-sm bg-primary text-primary-foreground"
-                        : "mr-auto rounded-bl-sm bg-card"
+                        ? "mr-auto rounded-bl-sm bg-primary text-primary-foreground"
+                        : "ml-auto rounded-br-sm bg-card"
                     }`}
                   >
                     {m.kind === "location" && m.latitude != null && m.longitude != null ? (
-                      <a
-                        href={`https://www.google.com/maps?q=${m.latitude},${m.longitude}`}
-                        target="_blank"
-                        rel="noreferrer noopener"
-                        className="block"
-                      >
-                        <div className="mb-1 overflow-hidden rounded-lg">
-                          <img
-                            src={`https://staticmap.openstreetmap.de/staticmap.php?center=${m.latitude},${m.longitude}&zoom=15&size=260x140&markers=${m.latitude},${m.longitude},red-pushpin`}
-                            alt="Shared location"
-                            className="h-32 w-[260px] max-w-full object-cover"
-                            onError={(e) => ((e.currentTarget.style.display = "none"))}
-                          />
-                        </div>
-                        <p className="flex items-center gap-1 text-xs font-medium">
-                          <MapPin className="h-3.5 w-3.5" /> View location on map
-                        </p>
-                        <p className={`text-[10px] ${mine ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
-                          {m.latitude.toFixed(5)}, {m.longitude.toFixed(5)}
-                        </p>
-                      </a>
+                      (() => {
+                        const lat = m.latitude;
+                        const lng = m.longitude;
+                        const d = 0.01;
+                        const bbox = `${lng - d},${lat - d},${lng + d},${lat + d}`;
+                        const embed = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat},${lng}`;
+                        const open = `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=16/${lat}/${lng}`;
+                        return (
+                          <div className="space-y-1">
+                            <div className="overflow-hidden rounded-lg border border-border/40 bg-muted">
+                              <iframe
+                                title="Shared location map"
+                                src={embed}
+                                className="block h-40 w-[260px] max-w-full"
+                                loading="lazy"
+                                referrerPolicy="no-referrer-when-downgrade"
+                              />
+                            </div>
+                            <a
+                              href={open}
+                              target="_blank"
+                              rel="noreferrer noopener"
+                              className={`flex items-center gap-1 text-xs font-medium underline-offset-2 hover:underline ${
+                                mine ? "text-primary-foreground" : "text-primary"
+                              }`}
+                            >
+                              <MapPin className="h-3.5 w-3.5" /> Open in maps
+                            </a>
+                            <p
+                              className={`text-[10px] ${
+                                mine ? "text-primary-foreground/70" : "text-muted-foreground"
+                              }`}
+                            >
+                              {lat.toFixed(5)}, {lng.toFixed(5)}
+                            </p>
+                          </div>
+                        );
+                      })()
                     ) : (
                       <p className="whitespace-pre-line break-words">{m.body}</p>
                     )}
@@ -582,7 +606,7 @@ function Chat() {
           ))
         )}
         {peerTyping && (
-          <div className="mr-auto flex items-center gap-1 rounded-2xl rounded-bl-sm bg-card px-3 py-2 shadow-sm">
+          <div className="ml-auto flex items-center gap-1 rounded-2xl rounded-br-sm bg-card px-3 py-2 shadow-sm">
             <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:-0.2s]" />
             <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:-0.1s]" />
             <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground" />

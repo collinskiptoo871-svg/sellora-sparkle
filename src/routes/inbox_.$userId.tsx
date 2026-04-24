@@ -88,7 +88,8 @@ function Chat() {
         .maybeSingle()
         .then(({ data }) => {
           setProductInfo(data ?? null);
-          setBody((prev) => prev || (data ? `Hi! Is "${data.title}" still available?` : prev));
+          // Note: we no longer auto-fill the composer. The pinned product card
+          // gives context; the user types their own first message.
         });
     }
   }, [userId, product]);

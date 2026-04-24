@@ -9,7 +9,7 @@ import { CATEGORIES } from "@/lib/countries";
 import { ArrowLeft, Loader2, Save } from "lucide-react";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/product/$id/edit")({
+export const Route = createFileRoute("/product/$id_/edit")({
   head: () => ({ meta: [{ title: "Edit product — Sellora" }] }),
   component: EditProduct,
 });

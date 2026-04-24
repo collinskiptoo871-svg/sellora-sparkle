@@ -50,13 +50,13 @@ async function fulfillBenefits(merchantReference: string | null, trackingId: str
       })
       .eq("id", productId)
       .eq("seller_id", order.user_id); // safety: only the buyer's own product
-    await supabaseAdmin.from("notifications").insert({
+    await supabaseAdmin.from("notifications").insert([{
       user_id: order.user_id,
-      category: "system",
+      category: "promotions",
       title: "Boost activated 🚀",
       body: `Your product is now boosted for ${days} days.`,
       link: `/product/${productId}`,
-    });
+    }]);
     return;
   }
 
@@ -69,13 +69,13 @@ async function fulfillBenefits(merchantReference: string | null, trackingId: str
         verified_at: new Date().toISOString(),
       })
       .eq("user_id", order.user_id);
-    await supabaseAdmin.from("notifications").insert({
+    await supabaseAdmin.from("notifications").insert([{
       user_id: order.user_id,
-      category: "system",
+      category: "account",
       title: "Verification active ✅",
       body: "Your account is now verified. Enjoy the perks!",
       link: "/dashboard",
-    });
+    }]);
   }
 }
 
